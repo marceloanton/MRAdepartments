@@ -1,36 +1,74 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# MRAnalytics Departments
 
-## Getting Started
+Operations platform for short-term rental apartment teams.
 
-First, run the development server:
+Built for fast daily execution from mobile, notebook, and desktop, with a strong focus on operational control and traceability.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## What the software does
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- Unit operational states: cleaning, maintenance, inspection, ready, blocked.
+- Ticket and task workflows with priority and due dates.
+- Check-in risk view to detect issues before guest arrival.
+- Reservation operations (manual/CSV) with guest and co-occupant records.
+- Evidence management (photos + records) for audit trails.
+- SLA and internal alerts for supervisors.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Product preview
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Desktop
+![Operations Dashboard](./public/screenshots/dashboard-operacion.png)
+![Check-in Risk](./public/screenshots/riesgo-checkin.png)
+![Reservations & Calendar](./public/screenshots/reservas-calendario.png)
+![SLA Board](./public/screenshots/sla-board.png)
+![Help Center](./public/screenshots/desktop-ayuda.png)
+![Departments](./public/screenshots/desktop-departamentos.png)
 
-## Learn More
+### Mobile
+![Mobile Operations](./public/screenshots/mobile-operacion.png)
+![Mobile Risk](./public/screenshots/mobile-riesgo.png)
+![Mobile Reservations](./public/screenshots/mobile-reservas.png)
+![Mobile Help](./public/screenshots/mobile-ayuda.png)
+![Mobile Kanban](./public/screenshots/kanban-mobile.png)
 
-To learn more about Next.js, take a look at the following resources:
+### Theme (Dark)
+![Operations Dashboard Dark](./public/screenshots/dashboard-operacion-dark.png)
+![Check-in Risk Dark](./public/screenshots/riesgo-checkin-dark.png)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Current status
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+**Status:** `v1 internal operations ready`  
+**Maturity:** `usable in day-to-day operations`  
+**Current focus:** `stability, UX, production hardening`
 
-## Deploy on Vercel
+### Included today
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- Core unit operations workflow.
+- Ticket and task lifecycle.
+- Check-in risk monitoring.
+- Reservations with guest profile records.
+- Evidence and internal alerting.
+- Responsive UX for phone, notebook, and desktop.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### In progress (next versions)
+
+- Advanced supervisor automation.
+- External operational integrations.
+- Assisted operational intelligence modules.
+
+## Ideal users
+
+- Short-term rental operators.
+- Cleaning and maintenance teams.
+- Supervisors running high unit volumes.
+
+## Brand
+
+**MRAnalytics**  
+**Departments**
+
+## License
+
+This repository is public and source-available.
+
+- Non-commercial use: allowed under [`LICENSE`](./LICENSE).
+- Commercial/production use: requires a paid license (see [`COMMERCIAL_LICENSE.md`](./COMMERCIAL_LICENSE.md)).
