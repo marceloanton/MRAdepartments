@@ -1249,37 +1249,39 @@ export function OperationsDashboard({
                           No hay resultados para tu búsqueda.
                         </div>
                       ) : null}
-                      {pagedOperationUnits.map((unit) => {
-                        const unitTickets = localTickets.filter((ticket) => ticket.unitId === unit.id);
-                        const risk = isCheckInAtRisk(unit, unitTickets);
+                      <div className="grid gap-3 lg:grid-cols-2">
+                        {pagedOperationUnits.map((unit) => {
+                          const unitTickets = localTickets.filter((ticket) => ticket.unitId === unit.id);
+                          const risk = isCheckInAtRisk(unit, unitTickets);
 
-                        return (
-                          <button
-                            key={unit.id}
-                            onClick={() => setSelectedUnitId(unit.id)}
-                            className={`grid w-full gap-3 rounded-lg border p-3 text-left transition sm:grid-cols-[130px_minmax(0,1fr)_auto] ${
-                              selectedUnitId === unit.id ? "border-[#26352f] bg-[#f0f4ed]" : "border-[#d8ded6] bg-white"
-                            }`}
-                          >
-                            <ApartmentPhoto unit={unit} className="h-24 sm:h-full" />
-                            <div className="min-w-0">
-                              <div className="flex flex-wrap items-center gap-2">
-                                <span className="font-semibold">{unit.code}</span>
-                                <Badge className={statusTone[unit.status]}>{unitStatusLabel(unit.status)}</Badge>
-                                {risk ? <Badge className="bg-red-600 text-white">riesgo</Badge> : null}
+                          return (
+                            <button
+                              key={unit.id}
+                              onClick={() => setSelectedUnitId(unit.id)}
+                              className={`grid w-full gap-3 rounded-lg border p-3 text-left transition sm:grid-cols-[130px_minmax(0,1fr)_auto] ${
+                                selectedUnitId === unit.id ? "border-[#26352f] bg-[#f0f4ed]" : "border-[#d8ded6] bg-white"
+                              }`}
+                            >
+                              <ApartmentPhoto unit={unit} className="h-24 sm:h-full" />
+                              <div className="min-w-0">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <span className="font-semibold">{unit.code}</span>
+                                  <Badge className={statusTone[unit.status]}>{unitStatusLabel(unit.status)}</Badge>
+                                  {risk ? <Badge className="bg-red-600 text-white">riesgo</Badge> : null}
+                                </div>
+                                <p className="mt-1 text-sm text-[#66736c]">{unit.address}</p>
+                                <p className="mt-2 text-xs text-[#66736c]">
+                                  Piso {unit.floor} · {unit.bedrooms} amb. · Check-in {formatShortDate(unit.nextCheckIn)}
+                                </p>
                               </div>
-                              <p className="mt-1 text-sm text-[#66736c]">{unit.address}</p>
-                              <p className="mt-2 text-xs text-[#66736c]">
-                                Piso {unit.floor} · {unit.bedrooms} amb. · Check-in {formatShortDate(unit.nextCheckIn)}
-                              </p>
-                            </div>
-                            <div className="flex items-center gap-2 text-sm text-[#66736c] sm:justify-end">
-                              <Wrench className="size-4" />
-                              {unitTickets.length} tickets
-                            </div>
-                          </button>
-                        );
-                      })}
+                              <div className="flex items-center gap-2 text-sm text-[#66736c] sm:justify-end">
+                                <Wrench className="size-4" />
+                                {unitTickets.length} tickets
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
                       {filteredUnits.length > 0 ? (
                         <div className="flex flex-col gap-2 border-t border-[#d8ded6] pt-3 sm:flex-row sm:items-center sm:justify-between">
                           <p className="text-xs text-[#66736c]">
@@ -4646,7 +4648,7 @@ function ReservationsPanel({
               aria-label="Dia operativo"
             />
           </div>
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-2">
             <div className="rounded-md border border-[#d8ded6] bg-white px-3 py-2 text-sm">Check-outs: <strong>{opsSummary.checkOuts}</strong></div>
             <div className="rounded-md border border-[#d8ded6] bg-white px-3 py-2 text-sm">Check-ins: <strong>{opsSummary.checkIns}</strong></div>
             <div className="rounded-md border border-[#d8ded6] bg-white px-3 py-2 text-sm">Unidades: <strong>{opsSummary.unitsTouched}</strong></div>
