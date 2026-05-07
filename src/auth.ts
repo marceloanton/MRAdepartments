@@ -16,6 +16,13 @@ function logAuthWarning(code: string, error?: unknown) {
   console.warn(base);
 }
 
+function maskEmail(email: string) {
+  const [name, domain] = email.split("@");
+  if (!name || !domain) return "***";
+  const head = name.slice(0, 2);
+  return `${head}***@${domain}`;
+}
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   // Prevent hard-fail on platforms where AUTH_SECRET was not configured yet.
   // Keep AUTH_SECRET/NEXTAUTH_SECRET as primary values.
@@ -37,7 +44,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       async authorize(credentials) {
         if (!credentials?.email || !credentials.password) return null;
 
-        const email = String(credentials.email);
+        const email = String(credentials.email).trim().toLowerCase();
         const password = String(credentials.password);
 
         try {
@@ -61,12 +68,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             .where(and(eq(appUsers.tenantId, tenantId), eq(appUsers.email, email), eq(appUsers.active, true)))
             .limit(1);
 
-          if (!user) return null;
+          if (!user) {
+            logAuthWarning("user_not_found", new Error(maskEmail(email)));
+            return null;
+          }
           if (!user.passwordHash) {
             logAuthWarning("password_hash_missing");
             return null;
           }
-          if (!verifyPassword(password, user.passwordHash)) return null;
+          if (!verifyPassword(password, user.passwordHash)) {
+            logAuthWarning("password_mismatch", new Error(maskEmail(email)));
+            return null;
+          }
 
           return {
             id: user.id,
