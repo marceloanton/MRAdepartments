@@ -31,6 +31,13 @@ function logAuthWarning(code: string, error?: unknown) {
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  // Prevent hard-fail on platforms where AUTH_SECRET was not configured yet.
+  // Keep AUTH_SECRET/NEXTAUTH_SECRET as primary values.
+  secret:
+    process.env.AUTH_SECRET ??
+    process.env.NEXTAUTH_SECRET ??
+    "mranalytics-v1-fallback-secret-change-in-production",
+  trustHost: true,
   session: {
     strategy: "jwt",
   },
