@@ -96,9 +96,13 @@ function LoginScreen({ params }: { params: Record<string, string | string[] | un
     <main className="flex min-h-screen items-center justify-center bg-[#f6f7f4] p-4">
       <Card className="w-full max-w-md border-[#d8ded6] shadow-none">
         <CardHeader>
-          <p className="text-xs uppercase tracking-wide text-[#66736c]">MRAnalytics</p>
-          <p className="text-xl font-semibold leading-tight">Departments</p>
-          <p className="text-xs text-[#66736c]">v1</p>
+          <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-[#66736c]">MRAnalytics</p>
+          <div className="flex items-center gap-2">
+            <p className="text-3xl font-semibold leading-none text-[#111814]">Departments</p>
+            <span className="inline-flex h-6 items-center rounded-full border border-[#d8ded6] bg-[#eef1ea] px-2 text-[11px] font-semibold text-[#33423b]">
+              v1
+            </span>
+          </div>
           <CardTitle>Ingreso operativo</CardTitle>
         </CardHeader>
         <CardContent>
