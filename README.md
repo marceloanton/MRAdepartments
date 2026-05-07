@@ -8,6 +8,12 @@ Built for fast daily execution from mobile, notebook, and desktop, with a strong
 
 - Production: [https://mradep.vercel.app](https://mradep.vercel.app)
 
+## Demo Access (Read-only)
+
+- Email: `demo@demo`
+- Password: `demo`
+- Scope: navigation only (no create/edit/delete actions)
+
 ## What the software does
 
 - Unit operational states: cleaning, maintenance, inspection, ready, blocked.

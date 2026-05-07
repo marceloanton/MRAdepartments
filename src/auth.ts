@@ -46,6 +46,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         const email = String(credentials.email).trim().toLowerCase();
         const password = String(credentials.password);
+        if (email === "demo@demo" && password === "demo") {
+          return {
+            id: "demo-user",
+            name: "Demo Viewer",
+            email: "demo@demo",
+            role: "demo",
+            tenantId: "offline-tenant",
+          };
+        }
 
         try {
           const db = getDb();
@@ -101,6 +110,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.id = user.id;
         token.role = (user as { role?: string }).role;
         token.tenantId = (user as { tenantId?: string }).tenantId;
+        token.readOnly = (user as { role?: string }).role === "demo";
       }
       return token;
     },
@@ -109,6 +119,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         (session.user as { id?: string; role?: string; tenantId?: string }).id = token.id as string;
         (session.user as { id?: string; role?: string; tenantId?: string }).role = token.role as string;
         (session.user as { id?: string; role?: string; tenantId?: string }).tenantId = token.tenantId as string;
+        (session.user as { id?: string; role?: string; tenantId?: string; readOnly?: boolean }).readOnly = Boolean(token.readOnly);
       }
       return session;
     },

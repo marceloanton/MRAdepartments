@@ -1796,7 +1796,7 @@ export function OperationsDashboard({
                 />
               </TabsContent>
 
-              <TabsContent value="reservas" className="mt-4 grid items-start gap-4 lg:grid-cols-[1fr_360px]">
+              <TabsContent value="reservas" className="mt-4">
                 <ReservationsPanel
                   handleCsv={handleCsv}
                   confirmCsvImport={confirmCsvImport}
@@ -1811,6 +1811,7 @@ export function OperationsDashboard({
                   csvResult={csvResult}
                   units={visibleUnits}
                   reservations={localReservations}
+                  readOnly={sessionUser.role === "demo"}
                 />
               </TabsContent>
 
@@ -4183,6 +4184,7 @@ function ReservationsPanel({
   csvResult,
   units: localUnits,
   reservations,
+  readOnly,
 }: {
   handleCsv: (file: File | null) => void;
   confirmCsvImport: () => Promise<void>;
@@ -4206,6 +4208,7 @@ function ReservationsPanel({
   csvResult: string;
   units: Unit[];
   reservations: AppData["reservations"];
+  readOnly: boolean;
 }) {
   const [opsDay, setOpsDay] = useState(getTodayInputValue);
   const [reservationViewMode, setReservationViewMode] = useState<"cards" | "list">("cards");
@@ -4289,6 +4292,9 @@ function ReservationsPanel({
   }, [operationalItems]);
 
   async function submitManualReservation(formData: FormData) {
+    if (readOnly) {
+      throw new Error("Modo demo: solo lectura.");
+    }
     const unitId = String(formData.get("manualUnitId") ?? "");
     const guest = String(formData.get("manualGuest") ?? "").trim();
     const platform = String(formData.get("manualPlatform") ?? "Airbnb") as Reservation["platform"];
@@ -4391,12 +4397,13 @@ function ReservationsPanel({
   }
 
   return (
-    <>
-      <Card className="min-w-0 rounded-lg border-[#d8ded6] shadow-none">
+    <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
+      <Card className="min-w-0 rounded-lg border-[#d8ded6] shadow-none lg:col-span-2">
         <CardHeader className="flex-row items-center justify-between gap-2">
           <CardTitle>{editingReservation ? "Editar reserva" : "Nueva reserva"}</CardTitle>
           <Button
             type="button"
+            disabled={readOnly}
             onClick={() => {
               setEditingReservationId(null);
               setPrimaryPhotoDataUrl("");
@@ -4409,7 +4416,9 @@ function ReservationsPanel({
           </Button>
         </CardHeader>
         <CardContent className="text-sm text-[#66736c]">
-          Alta y edición de reservas desde modal para no perder contexto.
+          {readOnly
+            ? "Modo demo: solo lectura. No se permiten altas ni cambios."
+            : "Alta y edición de reservas desde modal para no perder contexto."}
         </CardContent>
       </Card>
 
@@ -4420,6 +4429,7 @@ function ReservationsPanel({
           </DialogHeader>
           <form
             action={async (formData) => {
+              if (readOnly) return;
               await submitManualReservation(formData);
               setReservationEditorOpen(false);
               setEditingReservationId(null);
@@ -4618,7 +4628,7 @@ function ReservationsPanel({
         </DialogContent>
       </Dialog>
 
-      <Card className="min-w-0 rounded-lg border-[#d8ded6] shadow-none">
+      <Card className="min-w-0 rounded-lg border-[#d8ded6] shadow-none lg:order-2">
         <CardHeader className="gap-3">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle>Calendario operativo diario</CardTitle>
@@ -4676,7 +4686,7 @@ function ReservationsPanel({
         </CardContent>
       </Card>
 
-      <Card className="min-w-0 rounded-lg border-[#d8ded6] shadow-none">
+      <Card className="min-w-0 rounded-lg border-[#d8ded6] shadow-none lg:order-1">
         <CardHeader>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle>Ventanas operativas</CardTitle>
@@ -4729,6 +4739,7 @@ function ReservationsPanel({
                     variant="outline"
                     size="sm"
                     className="w-full"
+                    disabled={readOnly}
                     onClick={() => {
                       setEditingReservationId(reservation.id);
                       setPrimaryPhotoDataUrl(reservation.guestData?.primary?.photoDataUrl ?? "");
@@ -4746,6 +4757,7 @@ function ReservationsPanel({
                     variant="outline"
                     size="sm"
                     className="w-full border-red-300 text-red-700 hover:bg-red-50"
+                    disabled={readOnly}
                     onClick={() => {
                       if (!window.confirm(`Eliminar reserva de ${reservation.guest}?`)) return;
                       void removeManualReservation(reservation.id);
@@ -4789,6 +4801,7 @@ function ReservationsPanel({
                               variant="outline"
                               size="sm"
                               className="h-8 px-2 text-[11px]"
+                              disabled={readOnly}
                               onClick={() => {
                                 setEditingReservationId(reservation.id);
                                 setPrimaryPhotoDataUrl(reservation.guestData?.primary?.photoDataUrl ?? "");
@@ -4806,6 +4819,7 @@ function ReservationsPanel({
                               variant="outline"
                               size="sm"
                               className="col-span-2 h-8 border-red-300 px-2 text-[11px] text-red-700 hover:bg-red-50"
+                              disabled={readOnly}
                               onClick={() => {
                                 if (!window.confirm(`Eliminar reserva de ${reservation.guest}?`)) return;
                                 void removeManualReservation(reservation.id);
@@ -4837,7 +4851,7 @@ function ReservationsPanel({
         </CardContent>
       </Card>
 
-      <Card className="min-w-0 rounded-lg border-[#d8ded6] shadow-none">
+      <Card className="min-w-0 rounded-lg border-[#d8ded6] shadow-none lg:order-3">
         <CardHeader>
           <CardTitle>Importador CSV</CardTitle>
         </CardHeader>
@@ -4846,11 +4860,12 @@ function ReservationsPanel({
             accept=".csv"
             type="file"
             aria-label="Seleccionar archivo CSV de reservas"
+            disabled={readOnly}
             onChange={(event) => handleCsv(event.target.files?.[0] ?? null)}
           />
           <Textarea readOnly value={csvResult} className="min-h-28 resize-none text-sm" />
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            <Button className="w-full" onClick={() => confirmCsvImport()} disabled={csvPreview.length === 0 || csvImporting}>
+            <Button className="w-full" onClick={() => confirmCsvImport()} disabled={readOnly || csvPreview.length === 0 || csvImporting}>
               {csvImporting ? "Importando..." : `Confirmar import (${csvPreview.length})`}
             </Button>
             <Button className="w-full" variant="outline" onClick={downloadCsvErrors} disabled={csvErrors.length === 0}>
@@ -4862,7 +4877,7 @@ function ReservationsPanel({
           </p>
         </CardContent>
       </Card>
-    </>
+    </div>
   );
 }
 

@@ -24,7 +24,7 @@ export default async function Home({
   const session = await auth();
   if (!session?.user) return <LoginScreen params={params} />;
   const role = (session.user as { role?: string }).role;
-  const validRoles = new Set(["admin", "supervisor", "limpieza", "mantenimiento"]);
+  const validRoles = new Set(["admin", "supervisor", "limpieza", "mantenimiento", "demo"]);
   if (!role || !validRoles.has(role)) {
     return <ForbiddenScreen />;
   }
