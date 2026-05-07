@@ -57,6 +57,7 @@ import {
   listRecentBulkRiskActionsAction,
   createAppUserAction,
   updateAppUserAccessAction,
+  updateAppUserPasswordAction,
 } from "@/app/actions";
 import type { AppData } from "@/lib/app-data";
 import {
@@ -4804,6 +4805,21 @@ function UsersPanel({
     );
   }
 
+  async function resetPassword(user: User) {
+    if (!canManage) return;
+    const password = window.prompt(`Nueva contraseña para ${user.email ?? user.name} (mínimo 8 caracteres):`, "");
+    if (!password) return;
+    if (password.length < 8) {
+      window.alert("La contraseña debe tener al menos 8 caracteres.");
+      return;
+    }
+    await updateAppUserPasswordAction({
+      userId: user.id,
+      password,
+    });
+    window.alert("Contraseña actualizada.");
+  }
+
   return (
     <Card className="rounded-lg border-[#d8ded6] shadow-none">
       <CardHeader>
@@ -4837,7 +4853,7 @@ function UsersPanel({
                 <th className="px-3 py-2">Rol</th>
                 <th className="px-3 py-2">Zona</th>
                 <th className="px-3 py-2">Estado</th>
-                <th className="px-3 py-2 text-right">Acción</th>
+                <th className="px-3 py-2 text-right">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#d8ded6]">
@@ -4853,9 +4869,14 @@ function UsersPanel({
                     </Badge>
                   </td>
                   <td className="px-3 py-2 text-right">
-                    <Button size="sm" variant="outline" disabled={!canManage} onClick={() => void toggleUser(user)}>
-                      {user.active ? "Desactivar" : "Activar"}
-                    </Button>
+                    <div className="flex justify-end gap-2">
+                      <Button size="sm" variant="outline" disabled={!canManage} onClick={() => void toggleUser(user)}>
+                        {user.active ? "Desactivar" : "Activar"}
+                      </Button>
+                      <Button size="sm" variant="outline" disabled={!canManage} onClick={() => void resetPassword(user)}>
+                        Reset clave
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               ))}

@@ -174,6 +174,11 @@ const updateAppUserAccessSchema = z.object({
   zone: z.string().min(2).max(80).optional(),
 });
 
+const updateAppUserPasswordSchema = z.object({
+  userId: z.string().uuid(),
+  password: z.string().min(8).max(128),
+});
+
 function assertReservationWindow(checkIn: Date, checkOut: Date) {
   if (!(checkIn.getTime() > checkOut.getTime())) {
     throw new Error("La reserva debe tener check-out antes de check-in.");
@@ -290,6 +295,24 @@ export async function updateAppUserAccessAction(input: unknown) {
   await db
     .update(appUsers)
     .set(patch)
+    .where(and(eq(appUsers.id, parsed.userId), eq(appUsers.tenantId, actor.tenantId)));
+
+  revalidatePath("/");
+}
+
+export async function updateAppUserPasswordAction(input: unknown) {
+  const db = getDb();
+  const actor = await getSessionActorOrThrow();
+  assertRole(actor, ["admin"]);
+  if (actor.tenantId === OFFLINE_TENANT_ID) return;
+
+  const parsed = updateAppUserPasswordSchema.parse(input);
+  await db
+    .update(appUsers)
+    .set({
+      passwordHash: hashPassword(parsed.password),
+      updatedAt: new Date(),
+    })
     .where(and(eq(appUsers.id, parsed.userId), eq(appUsers.tenantId, actor.tenantId)));
 
   revalidatePath("/");
