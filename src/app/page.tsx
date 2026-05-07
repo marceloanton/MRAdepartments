@@ -68,9 +68,6 @@ function decodeLoginError(params: Record<string, string | string[] | undefined>)
 
 function LoginScreen({ params }: { params: Record<string, string | string[] | undefined> }) {
   const loginError = decodeLoginError(params);
-  const demoEnabled = process.env.DEMO_LOGIN_ENABLED === "true";
-  const demoPassword = process.env.DEMO_LOGIN_PASSWORD ?? "";
-  const showDemoHelp = process.env.NODE_ENV !== "production" && demoEnabled && demoPassword.length > 0;
 
   async function loginAction(formData: FormData) {
     "use server";
@@ -110,16 +107,14 @@ function LoginScreen({ params }: { params: Record<string, string | string[] | un
           ) : null}
           <form action={loginAction} className="grid gap-3">
             <label htmlFor="login-email" className="text-sm text-[#55645d]">Email</label>
-            <Input id="login-email" name="email" type="email" placeholder="admin@demo.local" required />
+            <Input id="login-email" name="email" type="email" placeholder="admin@tu-dominio.com" required />
             <label htmlFor="login-password" className="text-sm text-[#55645d]">Password</label>
             <Input id="login-password" name="password" type="password" placeholder="Password" required />
             <LoginSubmitButton />
           </form>
-          {showDemoHelp ? (
-            <p className="mt-3 text-xs text-[#55645d]">
-              Demo: `admin@demo.local` / clave configurada en `DEMO_LOGIN_PASSWORD`.
-            </p>
-          ) : null}
+          <p className="mt-3 text-xs text-[#55645d]">
+            Acceso administrado por base de datos. Si no tenés usuario, crealo con el script de bootstrap.
+          </p>
         </CardContent>
       </Card>
     </main>

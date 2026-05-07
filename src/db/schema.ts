@@ -45,6 +45,7 @@ export const appUsers = pgTable(
     tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
     email: text("email").notNull(),
     name: text("name").notNull(),
+    passwordHash: text("password_hash"),
     role: roleEnum("role").notNull(),
     zone: text("zone"),
     active: boolean("active").default(true).notNull(),

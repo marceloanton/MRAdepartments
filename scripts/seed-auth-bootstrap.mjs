@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { randomBytes, scryptSync } from "node:crypto";
 import postgres from "postgres";
 
 function loadEnvLocal() {
@@ -24,6 +25,15 @@ const tenantName = process.env.DEFAULT_TENANT_NAME ?? "MRAnalytics Departments";
 const adminEmail = process.env.DEMO_ADMIN_EMAIL ?? "admin@demo.local";
 const adminName = process.env.DEMO_ADMIN_NAME ?? "Mora Admin";
 const adminZone = process.env.DEMO_ADMIN_ZONE ?? "Todas";
+const adminPassword = process.env.AUTH_ADMIN_PASSWORD ?? process.env.DEMO_LOGIN_PASSWORD ?? "a";
+
+function hashPassword(password) {
+  const salt = randomBytes(16);
+  const hash = scryptSync(password, salt, 64);
+  return `scrypt:${salt.toString("base64")}:${hash.toString("base64")}`;
+}
+
+const adminPasswordHash = hashPassword(adminPassword);
 
 const sql = postgres(process.env.DATABASE_URL, { prepare: false });
 
@@ -42,8 +52,8 @@ await sql.begin(async (tx) => {
   }
 
   await tx`
-    insert into app_users (tenant_id, email, name, role, zone, active)
-    select ${tenant.id}, ${adminEmail}, ${adminName}, 'admin', ${adminZone}, true
+    insert into app_users (tenant_id, email, name, password_hash, role, zone, active)
+    select ${tenant.id}, ${adminEmail}, ${adminName}, ${adminPasswordHash}, 'admin', ${adminZone}, true
     where not exists (
       select 1
       from app_users
@@ -55,6 +65,7 @@ await sql.begin(async (tx) => {
     update app_users
     set
       name = ${adminName},
+      password_hash = ${adminPasswordHash},
       zone = ${adminZone},
       role = 'admin',
       active = true,
