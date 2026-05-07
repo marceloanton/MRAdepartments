@@ -1812,6 +1812,10 @@ export function OperationsDashboard({
                   units={visibleUnits}
                   reservations={localReservations}
                   readOnly={sessionUser.role === "demo"}
+                  onOpenUnit={(unitId) => {
+                    setSelectedUnitId(unitId);
+                    setActiveTab("operacion");
+                  }}
                 />
               </TabsContent>
 
@@ -4185,6 +4189,7 @@ function ReservationsPanel({
   units: localUnits,
   reservations,
   readOnly,
+  onOpenUnit,
 }: {
   handleCsv: (file: File | null) => void;
   confirmCsvImport: () => Promise<void>;
@@ -4209,6 +4214,7 @@ function ReservationsPanel({
   units: Unit[];
   reservations: AppData["reservations"];
   readOnly: boolean;
+  onOpenUnit: (unitId: string) => void;
 }) {
   const [opsDay, setOpsDay] = useState(getTodayInputValue);
   const [reservationViewMode, setReservationViewMode] = useState<"cards" | "list">("cards");
@@ -4734,7 +4740,10 @@ function ReservationsPanel({
                   <br />
                   Entra {formatShortDate(reservation.checkIn)}
                 </p>
-                <div className="grid grid-cols-1 gap-2 sm:col-span-2 sm:grid-cols-3">
+                <div className="grid grid-cols-1 gap-2 sm:col-span-2 sm:grid-cols-4">
+                  <Button variant="outline" size="sm" className="w-full" onClick={() => onOpenUnit(reservation.unitId)}>
+                    Ver departamento
+                  </Button>
                   <Button
                     variant="outline"
                     size="sm"
@@ -4796,7 +4805,15 @@ function ReservationsPanel({
                           <Badge variant="outline">{reservation.guestData?.primary?.documentNumber ? "Completo" : "Falta dato"}</Badge>
                         </td>
                         <td className="border-l border-[#e3e8e2] bg-white px-3 py-3">
-                          <div className="grid w-[164px] grid-cols-2 gap-1.5">
+                          <div className="grid w-[248px] grid-cols-2 gap-1.5">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="col-span-2 h-8 px-2 text-[11px]"
+                              onClick={() => onOpenUnit(reservation.unitId)}
+                            >
+                              Ver departamento
+                            </Button>
                             <Button
                               variant="outline"
                               size="sm"
