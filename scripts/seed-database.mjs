@@ -97,7 +97,6 @@ function isoFromNow(hoursAhead) {
 }
 
 const ids = {
-  tenant: "11111111-1111-4111-8111-111111111111",
   admin: "22222222-2222-4222-8222-222222222222",
   supervisor: "33333333-3333-4333-8333-333333333333",
   cleaning: "44444444-4444-4444-8444-444444444444",
@@ -105,27 +104,29 @@ const ids = {
 };
 
 await sql.begin(async (tx) => {
-  await tx`insert into tenants (id, name, slug)
-    values (${ids.tenant}, ${tenantName}, ${tenantSlug})
-    on conflict (slug) do update set name = excluded.name, updated_at = now()`;
+  const [tenant] = await tx`insert into tenants (name, slug)
+    values (${tenantName}, ${tenantSlug})
+    on conflict (slug) do update set name = excluded.name, updated_at = now()
+    returning id`;
+  const tenantId = tenant.id;
 
-  await tx`delete from agent_action_log where tenant_id = ${ids.tenant}`;
-  await tx`delete from notifications where tenant_id = ${ids.tenant}`;
-  await tx`delete from events where tenant_id = ${ids.tenant}`;
-  await tx`delete from evidence where tenant_id = ${ids.tenant}`;
-  await tx`delete from tasks where tenant_id = ${ids.tenant}`;
-  await tx`delete from tickets where tenant_id = ${ids.tenant}`;
-  await tx`delete from reservations where tenant_id = ${ids.tenant}`;
-  await tx`delete from units where tenant_id = ${ids.tenant}`;
-  await tx`delete from app_users where tenant_id = ${ids.tenant}`;
+  await tx`delete from agent_action_log where tenant_id = ${tenantId}`;
+  await tx`delete from notifications where tenant_id = ${tenantId}`;
+  await tx`delete from events where tenant_id = ${tenantId}`;
+  await tx`delete from evidence where tenant_id = ${tenantId}`;
+  await tx`delete from tasks where tenant_id = ${tenantId}`;
+  await tx`delete from tickets where tenant_id = ${tenantId}`;
+  await tx`delete from reservations where tenant_id = ${tenantId}`;
+  await tx`delete from units where tenant_id = ${tenantId}`;
+  await tx`delete from app_users where tenant_id = ${tenantId}`;
 
   await tx`insert into app_users (id, tenant_id, email, name, role, zone) values
-    (${ids.admin}, ${ids.tenant}, 'admin@demo.local', 'Mora Admin', 'admin', 'Todas'),
-    (${ids.supervisor}, ${ids.tenant}, 'supervisor@demo.local', 'Leo Supervisor', 'supervisor', 'Centro'),
-    (${ids.cleaning}, ${ids.tenant}, 'limpieza@demo.local', 'Equipo Limpieza A', 'limpieza', 'Palermo'),
-    (${ids.tech}, ${ids.tenant}, 'mantenimiento@demo.local', 'Rafa Mantenimiento', 'mantenimiento', 'Recoleta')`;
+    (${ids.admin}, ${tenantId}, 'admin@demo.local', 'Mora Admin', 'admin', 'Todas'),
+    (${ids.supervisor}, ${tenantId}, 'supervisor@demo.local', 'Leo Supervisor', 'supervisor', 'Centro'),
+    (${ids.cleaning}, ${tenantId}, 'limpieza@demo.local', 'Equipo Limpieza A', 'limpieza', 'Palermo'),
+    (${ids.tech}, ${tenantId}, 'mantenimiento@demo.local', 'Rafa Mantenimiento', 'mantenimiento', 'Recoleta')`;
 
-  const units = buildUnits(safeUnitCount, ids.tenant);
+  const units = buildUnits(safeUnitCount, tenantId);
   for (const unit of units) {
     await tx`
       insert into units (id, tenant_id, code, address, zone, owner_name, status, metadata)
@@ -150,7 +151,7 @@ await sql.begin(async (tx) => {
     await tx`
       insert into reservations (tenant_id, unit_id, source, guest_name, check_out_at, check_in_at, notes)
       values (
-        ${ids.tenant},
+        ${tenantId},
         ${unit.id},
         ${SOURCES[i % SOURCES.length]},
         ${`Huesped Demo ${i + 1}`},
@@ -170,7 +171,7 @@ await sql.begin(async (tx) => {
     const [ticket] = await tx`
       insert into tickets (tenant_id, unit_id, title, category, priority, status, source, assigned_to_id, due_at)
       values (
-        ${ids.tenant},
+        ${tenantId},
         ${unit.id},
         ${`Incidencia ${CATEGORIES[i % CATEGORIES.length]} en ${unit.code}`},
         ${CATEGORIES[i % CATEGORIES.length]},
@@ -192,7 +193,7 @@ await sql.begin(async (tx) => {
     await tx`
       insert into tasks (tenant_id, unit_id, title, role, assigned_to_id, status, due_at)
       values (
-        ${ids.tenant},
+        ${tenantId},
         ${unit.id},
         ${`Tarea ${role} para ${unit.code}`},
         ${role},
@@ -209,7 +210,7 @@ await sql.begin(async (tx) => {
     await tx`
       insert into evidence (tenant_id, ticket_id, kind, url, size_kb)
       values (
-        ${ids.tenant},
+        ${tenantId},
         ${ticketIds[i]},
         'external_link',
         ${`https://drive.google.com/demo/${unit.code.toLowerCase()}-${i + 1}`},
@@ -225,7 +226,7 @@ await sql.begin(async (tx) => {
     await tx`
       insert into notifications (tenant_id, role, channel, status, event_key, title, body)
       values (
-        ${ids.tenant},
+        ${tenantId},
         ${role === "mantenimiento" ? "supervisor" : role},
         'in_app',
         'pending',
