@@ -113,7 +113,7 @@ function LoginScreen({ params }: { params: Record<string, string | string[] | un
             <LoginSubmitButton />
           </form>
           <p className="mt-3 text-xs text-[#55645d]">
-            Acceso administrado por base de datos. Si no tenés usuario, crealo con el script de bootstrap.
+            Si no tenés acceso, pedí alta a un administrador.
           </p>
         </CardContent>
       </Card>

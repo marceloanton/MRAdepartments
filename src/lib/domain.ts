@@ -29,8 +29,10 @@ export type EventType = (typeof eventTypes)[number];
 export type User = {
   id: string;
   name: string;
+  email?: string;
   role: Role;
   zone: string;
+  active?: boolean;
 };
 
 export type Unit = {
@@ -163,10 +165,10 @@ export function createFakeApartmentImage(seed: string, accent: string) {
 }
 
 export const users: User[] = [
-  { id: "u-admin", name: "Mora Admin", role: "admin", zone: "Todas" },
-  { id: "u-super", name: "Leo Supervisor", role: "supervisor", zone: "Centro" },
-  { id: "u-clean", name: "Equipo Limpieza A", role: "limpieza", zone: "Palermo" },
-  { id: "u-tech", name: "Rafa Mantenimiento", role: "mantenimiento", zone: "Recoleta" },
+  { id: "u-admin", name: "Mora Admin", email: "admin@demo.local", role: "admin", zone: "Todas", active: true },
+  { id: "u-super", name: "Leo Supervisor", email: "supervisor@demo.local", role: "supervisor", zone: "Centro", active: true },
+  { id: "u-clean", name: "Equipo Limpieza A", email: "limpieza@demo.local", role: "limpieza", zone: "Palermo", active: true },
+  { id: "u-tech", name: "Rafa Mantenimiento", email: "mantenimiento@demo.local", role: "mantenimiento", zone: "Recoleta", active: true },
 ];
 
 export const units: Unit[] = [

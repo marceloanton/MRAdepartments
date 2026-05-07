@@ -55,6 +55,8 @@ import {
   updateUnitStatusAction,
   bulkDispatchCriticalTicketsAction,
   listRecentBulkRiskActionsAction,
+  createAppUserAction,
+  updateAppUserAccessAction,
 } from "@/app/actions";
 import type { AppData } from "@/lib/app-data";
 import {
@@ -73,6 +75,7 @@ import {
   NotificationItem,
   OperationalClosure,
   AgentActionLogItem,
+  User,
   Role,
   createFakeApartmentImage,
 } from "@/lib/domain";
@@ -174,6 +177,7 @@ export function OperationsDashboard({
   const [localClosures, setLocalClosures] = useState(initialData.closures);
   const [localNotifications, setLocalNotifications] = useState(initialData.notifications);
   const [localAgentLogs, setLocalAgentLogs] = useState(initialData.agentLogs);
+  const [localUsers, setLocalUsers] = useState(initialData.users);
   const [actionError, setActionError] = useState<string | null>(null);
   const [offlineOps, setOfflineOps] = useState<OfflineOp[]>([]);
   const [actionInfo, setActionInfo] = useState<string | null>(null);
@@ -1797,6 +1801,14 @@ export function OperationsDashboard({
                   canManage={canManage}
                   logs={localAgentLogs}
                   onLogCreated={(item) => setLocalAgentLogs((current) => [item, ...current].slice(0, 20))}
+                />
+              </TabsContent>
+
+              <TabsContent value="usuarios" className="mt-4">
+                <UsersPanel
+                  users={localUsers}
+                  canManage={sessionUser.role === "admin"}
+                  onUsersUpdated={setLocalUsers}
                 />
               </TabsContent>
             </Tabs>
@@ -4747,6 +4759,114 @@ function NotificationsPanel({
   );
 }
 
+function UsersPanel({
+  users,
+  canManage,
+  onUsersUpdated,
+}: {
+  users: User[];
+  canManage: boolean;
+  onUsersUpdated: (users: User[] | ((current: User[]) => User[])) => void;
+}) {
+  async function createUser(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!canManage) return;
+    const form = new FormData(event.currentTarget);
+    const input = {
+      email: String(form.get("email") ?? "").trim().toLowerCase(),
+      name: String(form.get("name") ?? "").trim(),
+      role: String(form.get("role") ?? "supervisor"),
+      zone: String(form.get("zone") ?? "Todas").trim(),
+      password: String(form.get("password") ?? ""),
+    };
+    if (!input.email || !input.name || !input.password) return;
+    const created = await createAppUserAction(input);
+    const localUser: User = {
+      id: created?.id ?? `local-user-${Date.now()}`,
+      email: created?.email ?? input.email,
+      name: created?.name ?? input.name,
+      role: (created?.role as Role) ?? (input.role as Role),
+      zone: created?.zone ?? input.zone,
+      active: created?.active ?? false,
+    };
+    onUsersUpdated((current) => [localUser, ...current]);
+    event.currentTarget.reset();
+  }
+
+  async function toggleUser(user: User) {
+    if (!canManage) return;
+    await updateAppUserAccessAction({
+      userId: user.id,
+      active: !(user.active ?? false),
+    });
+    onUsersUpdated((current) =>
+      current.map((item) => (item.id === user.id ? { ...item, active: !(item.active ?? false) } : item)),
+    );
+  }
+
+  return (
+    <Card className="rounded-lg border-[#d8ded6] shadow-none">
+      <CardHeader>
+        <CardTitle>Usuarios del sistema</CardTitle>
+      </CardHeader>
+      <CardContent className="grid gap-4">
+        <form onSubmit={createUser} className="grid gap-2 rounded-lg border border-[#d8ded6] bg-[#f8faf7] p-3 md:grid-cols-6">
+          <Input name="name" placeholder="Nombre" className="md:col-span-1" required />
+          <Input name="email" type="email" placeholder="email@dominio.com" className="md:col-span-2" required />
+          <SelectName
+            name="role"
+            options={[
+              ["admin", "Admin"],
+              ["supervisor", "Supervisor"],
+              ["limpieza", "Limpieza"],
+              ["mantenimiento", "Mantenimiento"],
+            ]}
+          />
+          <Input name="zone" placeholder="Zona" defaultValue="Todas" className="md:col-span-1" required />
+          <Input name="password" type="password" placeholder="Contraseña inicial" className="md:col-span-1" required />
+          <Button className="md:col-span-1" disabled={!canManage}>
+            Registrar
+          </Button>
+        </form>
+        <div className="overflow-x-auto rounded-lg border border-[#d8ded6] bg-white">
+          <table className="w-full min-w-[760px] text-sm">
+            <thead className="bg-[#eef1ea] text-left text-xs uppercase tracking-wide text-[#66736c]">
+              <tr>
+                <th className="px-3 py-2">Nombre</th>
+                <th className="px-3 py-2">Email</th>
+                <th className="px-3 py-2">Rol</th>
+                <th className="px-3 py-2">Zona</th>
+                <th className="px-3 py-2">Estado</th>
+                <th className="px-3 py-2 text-right">Acción</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#d8ded6]">
+              {users.map((user) => (
+                <tr key={user.id}>
+                  <td className="px-3 py-2 font-medium">{user.name}</td>
+                  <td className="px-3 py-2">{user.email ?? "-"}</td>
+                  <td className="px-3 py-2">{user.role}</td>
+                  <td className="px-3 py-2">{user.zone}</td>
+                  <td className="px-3 py-2">
+                    <Badge className={user.active ? "bg-emerald-700 text-white" : "bg-zinc-600 text-white"}>
+                      {user.active ? "Activo" : "Pendiente"}
+                    </Badge>
+                  </td>
+                  <td className="px-3 py-2 text-right">
+                    <Button size="sm" variant="outline" disabled={!canManage} onClick={() => void toggleUser(user)}>
+                      {user.active ? "Desactivar" : "Activar"}
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 function Navigation({
   activeTab,
   onNavigate,
@@ -4774,6 +4894,7 @@ function Navigation({
         [CalendarClock, "Reservas", "reservas"],
         [ShieldCheck, "Tiempos", "sla"],
         [Bell, "Avisos", "avisos"],
+        [UserRoundCog, "Usuarios", "usuarios"],
         [UserRoundCog, "Ayuda", "ayuda"],
       ].map(([Icon, label, tab]) => (
         <Button
@@ -4789,6 +4910,7 @@ function Navigation({
       <Separator className="my-2" />
       <p className="px-2 text-xs font-medium uppercase tracking-wide text-[#66736c]">Vistas avanzadas</p>
       {[
+        ["Usuarios", "usuarios"],
         ["Departamentos", "departamentos"],
         ["Tareas", "tareas"],
         ["Ejecutivo", "ejecutivo"],

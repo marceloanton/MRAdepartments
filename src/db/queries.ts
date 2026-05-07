@@ -121,8 +121,10 @@ export async function getAppData(input?: { actorRole?: string | null; actorUserI
       users: dbUsers.map((user): User => ({
         id: user.id,
         name: user.name,
+        email: user.email,
         role: user.role,
         zone: user.zone ?? "Todas",
+        active: user.active,
       })),
       tickets: dbTickets.map((ticket): Ticket => ({
         id: ticket.id,

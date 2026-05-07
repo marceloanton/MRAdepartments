@@ -23,6 +23,7 @@ import {
 import type { ParsedReservationImport } from "@/lib/csv";
 import type { EventType, Priority, Role, Task, TicketStatus, UnitStatus } from "@/lib/domain";
 import { createServiceRoleClient } from "@/lib/server";
+import { hashPassword } from "@/lib/password";
 
 type Actor = {
   id: string;
@@ -158,6 +159,21 @@ const bulkDispatchCriticalTicketsSchema = z.object({
   dueInHours: z.number().int().min(1).max(168).optional(),
 });
 
+const createAppUserSchema = z.object({
+  email: z.string().email(),
+  name: z.string().min(2).max(120),
+  role: z.enum(["admin", "supervisor", "limpieza", "mantenimiento"]),
+  zone: z.string().min(2).max(80).default("Todas"),
+  password: z.string().min(8).max(128),
+});
+
+const updateAppUserAccessSchema = z.object({
+  userId: z.string().uuid(),
+  active: z.boolean(),
+  role: z.enum(["admin", "supervisor", "limpieza", "mantenimiento"]).optional(),
+  zone: z.string().min(2).max(80).optional(),
+});
+
 function assertReservationWindow(checkIn: Date, checkOut: Date) {
   if (!(checkIn.getTime() > checkOut.getTime())) {
     throw new Error("La reserva debe tener check-out antes de check-in.");
@@ -214,6 +230,67 @@ export async function createUnitAction(formData: FormData) {
       floor: String(formData.get("floor") ?? "1A"),
     },
   });
+
+  revalidatePath("/");
+}
+
+export async function createAppUserAction(input: unknown) {
+  const db = getDb();
+  const actor = await getSessionActorOrThrow();
+  assertRole(actor, ["admin"]);
+  if (actor.tenantId === OFFLINE_TENANT_ID) return;
+
+  const parsed = createAppUserSchema.parse(input);
+  const email = parsed.email.trim().toLowerCase();
+  const [existing] = await db
+    .select({ id: appUsers.id })
+    .from(appUsers)
+    .where(and(eq(appUsers.tenantId, actor.tenantId), eq(appUsers.email, email)))
+    .limit(1);
+  if (existing) throw new Error("Ya existe un usuario con ese email.");
+
+  const [created] = await db
+    .insert(appUsers)
+    .values({
+      tenantId: actor.tenantId,
+      email,
+      name: parsed.name.trim(),
+      role: parsed.role,
+      zone: parsed.zone.trim(),
+      active: false,
+      passwordHash: hashPassword(parsed.password),
+    })
+    .returning({
+      id: appUsers.id,
+      email: appUsers.email,
+      name: appUsers.name,
+      role: appUsers.role,
+      zone: appUsers.zone,
+      active: appUsers.active,
+    });
+
+  revalidatePath("/");
+  return created;
+}
+
+export async function updateAppUserAccessAction(input: unknown) {
+  const db = getDb();
+  const actor = await getSessionActorOrThrow();
+  assertRole(actor, ["admin"]);
+  if (actor.tenantId === OFFLINE_TENANT_ID) return;
+
+  const parsed = updateAppUserAccessSchema.parse(input);
+  const patch: Record<string, unknown> = {
+    active: parsed.active,
+    updatedAt: new Date(),
+  };
+  if (parsed.role) patch.role = parsed.role;
+  if (parsed.zone) patch.zone = parsed.zone.trim();
+
+  await db
+    .update(appUsers)
+    .set(patch)
+    .where(and(eq(appUsers.id, parsed.userId), eq(appUsers.tenantId, actor.tenantId)));
 
   revalidatePath("/");
 }
