@@ -157,11 +157,13 @@ export function OperationsDashboard({
   const isWorker = sessionUser.role === "limpieza" || sessionUser.role === "mantenimiento";
   const [activeTab, setActiveTab] = useState("operacion");
   const [query, setQuery] = useState("");
+  const [operationPage, setOperationPage] = useState(1);
+  const [operationPageSize] = useState(8);
   const [departmentQuery, setDepartmentQuery] = useState("");
   const [departmentStatusFilter, setDepartmentStatusFilter] = useState<"all" | Unit["status"]>("all");
   const [departmentZoneFilter, setDepartmentZoneFilter] = useState("all");
   const [departmentPage, setDepartmentPage] = useState(1);
-  const [departmentPageSize, setDepartmentPageSize] = useState("25");
+  const [departmentPageSize, setDepartmentPageSize] = useState("12");
   const [departmentSort, setDepartmentSort] = useState<"score" | "code" | "zone" | "checkin">("checkin");
   const [departmentViewMode, setDepartmentViewMode] = useState<"list" | "cards">("cards");
   const [departmentEditorUnit, setDepartmentEditorUnit] = useState<Unit | null>(null);
@@ -210,6 +212,12 @@ export function OperationsDashboard({
       [unit.code, unit.address, unit.zone, unit.owner].some((value) => value.toLowerCase().includes(normalizedQuery)),
     );
   }, [visibleUnits, query]);
+  const totalOperationPages = Math.max(1, Math.ceil(filteredUnits.length / operationPageSize));
+  const safeOperationPage = Math.min(operationPage, totalOperationPages);
+  const pagedOperationUnits = useMemo(() => {
+    const start = (safeOperationPage - 1) * operationPageSize;
+    return filteredUnits.slice(start, start + operationPageSize);
+  }, [filteredUnits, safeOperationPage, operationPageSize]);
   const zoneOptions = useMemo(
     () =>
       Array.from(new Set(visibleUnits.map((unit) => unit.zone.trim()).filter((zone) => zone.length > 0))).sort((a, b) =>
@@ -235,7 +243,7 @@ export function OperationsDashboard({
       return bTickets - aTickets;
     });
   }, [departmentQuery, departmentStatusFilter, departmentZoneFilter, departmentSort, visibleUnits, visibleTickets]);
-  const parsedDepartmentPageSize = Number.parseInt(departmentPageSize, 10) || 25;
+  const parsedDepartmentPageSize = Number.parseInt(departmentPageSize, 10) || 12;
   const totalDepartmentPages = Math.max(1, Math.ceil(departmentFilteredUnits.length / parsedDepartmentPageSize));
   const safeDepartmentPage = Math.min(departmentPage, totalDepartmentPages);
   const pagedDepartmentUnits = useMemo(() => {
@@ -1224,7 +1232,10 @@ export function OperationsDashboard({
                           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#66736c]" />
                           <Input
                             value={query}
-                            onChange={(event) => setQuery(event.target.value)}
+                            onChange={(event) => {
+                              setQuery(event.target.value);
+                              setOperationPage(1);
+                            }}
                             placeholder="Buscar unidad, barrio u owner"
                             aria-label="Buscar unidad"
                             className="h-11 pl-9"
@@ -1238,7 +1249,7 @@ export function OperationsDashboard({
                           No hay resultados para tu búsqueda.
                         </div>
                       ) : null}
-                      {filteredUnits.map((unit) => {
+                      {pagedOperationUnits.map((unit) => {
                         const unitTickets = localTickets.filter((ticket) => ticket.unitId === unit.id);
                         const risk = isCheckInAtRisk(unit, unitTickets);
 
@@ -1269,6 +1280,35 @@ export function OperationsDashboard({
                           </button>
                         );
                       })}
+                      {filteredUnits.length > 0 ? (
+                        <div className="flex flex-col gap-2 border-t border-[#d8ded6] pt-3 sm:flex-row sm:items-center sm:justify-between">
+                          <p className="text-xs text-[#66736c]">
+                            Mostrando {(safeOperationPage - 1) * operationPageSize + 1}-
+                            {(safeOperationPage - 1) * operationPageSize + pagedOperationUnits.length} de {filteredUnits.length}
+                          </p>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={safeOperationPage <= 1}
+                              onClick={() => setOperationPage((current) => Math.max(1, current - 1))}
+                            >
+                              Anterior
+                            </Button>
+                            <span className="text-xs text-[#66736c]">
+                              Página {safeOperationPage} de {totalOperationPages}
+                            </span>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={safeOperationPage >= totalOperationPages}
+                              onClick={() => setOperationPage((current) => Math.min(totalOperationPages, current + 1))}
+                            >
+                              Siguiente
+                            </Button>
+                          </div>
+                        </div>
+                      ) : null}
                     </CardContent>
                   </Card>
 
@@ -2741,10 +2781,18 @@ function UnitKanbanPanel({
 }) {
   const [draggingUnitId, setDraggingUnitId] = useState<string | null>(null);
   const [hoverStatus, setHoverStatus] = useState<Unit["status"] | null>(null);
+  const [mobilePage, setMobilePage] = useState(1);
+  const mobilePageSize = 10;
+  const mobileTotalPages = Math.max(1, Math.ceil(units.length / mobilePageSize));
+  const safeMobilePage = Math.min(mobilePage, mobileTotalPages);
+  const mobileUnits = useMemo(() => {
+    const start = (safeMobilePage - 1) * mobilePageSize;
+    return units.slice(start, start + mobilePageSize);
+  }, [units, safeMobilePage]);
   const columns = unitStatuses.map((status) => ({
     status,
     label: unitStatusLabel(status),
-    units: units.filter((unit) => unit.status === status),
+    units: units.filter((unit) => unit.status === status).slice(0, 20),
   }));
 
   function moveUnit(unitId: string, toStatus: Unit["status"]) {
@@ -2774,7 +2822,7 @@ function UnitKanbanPanel({
       </CardHeader>
       <CardContent>
         <div className="grid gap-3 md:hidden">
-          {units.map((unit) => {
+          {mobileUnits.map((unit) => {
             const openCount = tickets.filter((ticket) => ticket.unitId === unit.id && !["resuelto", "cerrado"].includes(ticket.status)).length;
             return (
               <div key={unit.id} className="rounded-lg border border-[#d8ded6] bg-white p-3">
@@ -2796,6 +2844,17 @@ function UnitKanbanPanel({
               </div>
             );
           })}
+          <div className="flex items-center justify-between gap-2">
+            <Button variant="outline" size="sm" disabled={safeMobilePage <= 1} onClick={() => setMobilePage((current) => Math.max(1, current - 1))}>
+              Anterior
+            </Button>
+            <span className="text-xs text-[#66736c]">
+              Pagina {safeMobilePage} de {mobileTotalPages}
+            </span>
+            <Button variant="outline" size="sm" disabled={safeMobilePage >= mobileTotalPages} onClick={() => setMobilePage((current) => Math.min(mobileTotalPages, current + 1))}>
+              Siguiente
+            </Button>
+          </div>
         </div>
         <div className="hidden overflow-x-auto md:block">
           <div className="grid min-w-[1040px] grid-cols-6 gap-3">
@@ -2957,13 +3016,22 @@ function TicketsPanel({
   markTicketResolved: (ticketId: string) => void;
   canResolveTicket: (ticket: Ticket) => boolean;
 }) {
+  const [page, setPage] = useState(1);
+  const pageSize = 6;
+  const totalPages = Math.max(1, Math.ceil(openTickets.length / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const pagedTickets = useMemo(() => {
+    const start = (safePage - 1) * pageSize;
+    return openTickets.slice(start, start + pageSize);
+  }, [openTickets, safePage]);
+
   return (
     <Card className="min-w-0 rounded-lg border-[#d8ded6] shadow-none">
       <CardHeader>
         <CardTitle>Tickets activos</CardTitle>
       </CardHeader>
       <CardContent className="grid gap-3">
-        {openTickets.map((ticket) => {
+        {pagedTickets.map((ticket) => {
           const unit = localUnits.find((currentUnit) => currentUnit.id === ticket.unitId);
 
           const canResolve = canResolveTicket(ticket);
@@ -2986,6 +3054,17 @@ function TicketsPanel({
             </div>
           );
         })}
+        <div className="flex items-center justify-between gap-2">
+          <Button variant="outline" size="sm" disabled={safePage <= 1} onClick={() => setPage((current) => Math.max(1, current - 1))}>
+            Anterior
+          </Button>
+          <span className="text-xs text-[#66736c]">
+            Mostrando {pagedTickets.length === 0 ? 0 : (safePage - 1) * pageSize + 1}-{(safePage - 1) * pageSize + pagedTickets.length} de {openTickets.length}
+          </span>
+          <Button variant="outline" size="sm" disabled={safePage >= totalPages} onClick={() => setPage((current) => Math.min(totalPages, current + 1))}>
+            Siguiente
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );
@@ -3988,40 +4067,103 @@ function TasksPanel({
   updateTaskStatus: (taskId: string, status: Task["status"]) => void;
   canUpdateTask: (task: Task) => boolean;
 }) {
+  const taskRoles: Array<Task["role"]> = ["limpieza", "mantenimiento", "supervisor"];
+  const pageSize = 6;
+  const [pageByRole, setPageByRole] = useState<Record<Task["role"], number>>({
+    limpieza: 1,
+    mantenimiento: 1,
+    supervisor: 1,
+  });
+  const tasksByRole = useMemo(
+    () =>
+      taskRoles.map((role) => {
+        const all = localTasks.filter((task) => task.role === role);
+        const totalPages = Math.max(1, Math.ceil(all.length / pageSize));
+        const safePage = Math.min(pageByRole[role] ?? 1, totalPages);
+        const start = (safePage - 1) * pageSize;
+        return {
+          role,
+          all,
+          totalPages,
+          safePage,
+          paged: all.slice(start, start + pageSize),
+        };
+      }),
+    [localTasks, pageByRole],
+  );
+
   return (
     <Card className="min-w-0 rounded-lg border-[#d8ded6] shadow-none">
       <CardHeader>
         <CardTitle>Tareas por equipo</CardTitle>
       </CardHeader>
-      <CardContent className="grid gap-3">
-        {localTasks.map((task) => {
-          const unit = localUnits.find((currentUnit) => currentUnit.id === task.unitId);
-
-          const canUpdate = canUpdateTask(task);
-          return (
-            <div key={task.id} className="grid min-w-0 gap-3 rounded-lg border border-[#d8ded6] bg-white p-4 md:grid-cols-[minmax(0,1fr)_auto]">
-              <div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <p className="font-medium">{task.title}</p>
-                  <Badge variant="outline">{task.role}</Badge>
-                </div>
-                <p className="mt-1 text-sm text-[#66736c]">{unit?.code} · vence {formatShortDate(task.dueAt)}</p>
-              </div>
-              <Select value={task.status} onValueChange={(value) => updateTaskStatus(task.id, value as Task["status"])} disabled={!canUpdate}>
-                <SelectTrigger className="h-10 w-full md:w-40">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {ticketStatuses.map((status) => (
-                    <SelectItem key={status} value={status}>
-                      {status.replaceAll("_", " ")}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+      <CardContent className="grid gap-3 lg:grid-cols-3">
+        {tasksByRole.map((column) => (
+          <div key={column.role} className="rounded-lg border border-[#d8ded6] bg-[#f8faf7] p-3">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <p className="text-sm font-semibold capitalize">{column.role}</p>
+              <Badge variant="outline">{column.all.length}</Badge>
             </div>
-          );
-        })}
+            <div className="grid gap-2">
+              {column.paged.length === 0 ? (
+                <div className="rounded-md border border-[#d8ded6] bg-white p-3 text-xs text-[#66736c]">Sin tareas</div>
+              ) : null}
+              {column.paged.map((task) => {
+                const unit = localUnits.find((currentUnit) => currentUnit.id === task.unitId);
+                const canUpdate = canUpdateTask(task);
+                return (
+                  <div key={task.id} className="rounded-md border border-[#d8ded6] bg-white p-3">
+                    <p className="text-sm font-medium">{task.title}</p>
+                    <p className="mt-1 text-xs text-[#66736c]">{unit?.code} · vence {formatShortDate(task.dueAt)}</p>
+                    <Select value={task.status} onValueChange={(value) => updateTaskStatus(task.id, value as Task["status"])} disabled={!canUpdate}>
+                      <SelectTrigger className="mt-2 h-9 w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {ticketStatuses.map((status) => (
+                          <SelectItem key={status} value={status}>
+                            {status.replaceAll("_", " ")}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="mt-3 flex items-center justify-between gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={column.safePage <= 1}
+                onClick={() =>
+                  setPageByRole((current) => ({
+                    ...current,
+                    [column.role]: Math.max(1, (current[column.role] ?? 1) - 1),
+                  }))
+                }
+              >
+                Anterior
+              </Button>
+              <span className="text-[11px] text-[#66736c]">
+                Pagina {column.safePage} de {column.totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={column.safePage >= column.totalPages}
+                onClick={() =>
+                  setPageByRole((current) => ({
+                    ...current,
+                    [column.role]: Math.min(column.totalPages, (current[column.role] ?? 1) + 1),
+                  }))
+                }
+              >
+                Siguiente
+              </Button>
+            </div>
+          </div>
+        ))}
       </CardContent>
     </Card>
   );
@@ -4072,7 +4214,15 @@ function ReservationsPanel({
   const [primaryPhotoDataUrl, setPrimaryPhotoDataUrl] = useState<string>("");
   const [primaryPhotoPath, setPrimaryPhotoPath] = useState<string>("");
   const [primaryPhotoStatus, setPrimaryPhotoStatus] = useState<string>("Sin foto cargada");
-  const effectivePrimaryPhotoDataUrl = primaryPhotoDataUrl || editingReservation?.guestData?.primary.photoDataUrl || "";
+  const [reservationPage, setReservationPage] = useState(1);
+  const reservationPageSize = 8;
+  const reservationTotalPages = Math.max(1, Math.ceil(reservations.length / reservationPageSize));
+  const safeReservationPage = Math.min(reservationPage, reservationTotalPages);
+  const pagedReservations = useMemo(() => {
+    const start = (safeReservationPage - 1) * reservationPageSize;
+    return reservations.slice(start, start + reservationPageSize);
+  }, [reservations, safeReservationPage]);
+  const effectivePrimaryPhotoDataUrl = primaryPhotoDataUrl || editingReservation?.guestData?.primary?.photoDataUrl || "";
   const dayStart = useMemo(() => new Date(`${opsDay}T00:00:00`), [opsDay]);
   const dayEnd = useMemo(() => new Date(`${opsDay}T23:59:59`), [opsDay]);
   const operationalItems = useMemo(() => {
@@ -4189,7 +4339,7 @@ function ReservationsPanel({
           phone: primaryPhone || undefined,
           email: primaryEmail || undefined,
           photoDataUrl: effectivePrimaryPhotoDataUrl || undefined,
-          photoPath: primaryPhotoPath || editingReservation?.guestData?.primary.photoPath || undefined,
+          photoPath: primaryPhotoPath || editingReservation?.guestData?.primary?.photoPath || undefined,
         },
         occupants,
         legal: {
@@ -4311,7 +4461,7 @@ function ReservationsPanel({
                 <select
                   id="manual-primary-doc-type"
                   name="manualPrimaryDocType"
-                  defaultValue={editingReservation?.guestData?.primary.documentType ?? "dni"}
+                  defaultValue={editingReservation?.guestData?.primary?.documentType ?? "dni"}
                   className="h-10 rounded-lg border border-[#d8ded6] bg-white px-3 text-sm"
                 >
                   <option value="dni">DNI</option>
@@ -4323,7 +4473,7 @@ function ReservationsPanel({
                 <Input
                   id="manual-primary-doc-number"
                   name="manualPrimaryDocNumber"
-                  defaultValue={editingReservation?.guestData?.primary.documentNumber ?? ""}
+                  defaultValue={editingReservation?.guestData?.primary?.documentNumber ?? ""}
                   placeholder="Ej: 30111222"
                   required
                 />
@@ -4335,7 +4485,7 @@ function ReservationsPanel({
                 <Input
                   id="manual-primary-nationality"
                   name="manualPrimaryNationality"
-                  defaultValue={editingReservation?.guestData?.primary.nationality ?? ""}
+                  defaultValue={editingReservation?.guestData?.primary?.nationality ?? ""}
                   placeholder="Argentina"
                 />
               </div>
@@ -4344,7 +4494,7 @@ function ReservationsPanel({
                 <Input
                   id="manual-primary-phone"
                   name="manualPrimaryPhone"
-                  defaultValue={editingReservation?.guestData?.primary.phone ?? ""}
+                  defaultValue={editingReservation?.guestData?.primary?.phone ?? ""}
                   placeholder="+54..."
                 />
               </div>
@@ -4354,7 +4504,7 @@ function ReservationsPanel({
               id="manual-primary-email"
               name="manualPrimaryEmail"
               type="email"
-              defaultValue={editingReservation?.guestData?.primary.email ?? ""}
+              defaultValue={editingReservation?.guestData?.primary?.email ?? ""}
               placeholder="huesped@email.com"
             />
             <div className="grid gap-2">
@@ -4543,9 +4693,9 @@ function ReservationsPanel({
           </div>
         </CardHeader>
         <CardContent className="grid gap-3">
-          {reservationViewMode === "cards" ? reservations.map((reservation) => {
+          {reservationViewMode === "cards" ? pagedReservations.map((reservation) => {
             const unit = localUnits.find((currentUnit) => currentUnit.id === reservation.unitId);
-            const guestPhoto = reservation.guestData?.primary.photoDataUrl;
+            const guestPhoto = reservation.guestData?.primary?.photoDataUrl;
 
             return (
               <div key={reservation.id} className="grid min-w-0 gap-3 rounded-lg border border-[#d8ded6] bg-white p-4 sm:grid-cols-[minmax(0,1fr)_auto]">
@@ -4557,10 +4707,10 @@ function ReservationsPanel({
                   ) : null}
                   <p className="break-words font-medium">{unit?.code} · {reservation.guest}</p>
                   <p className="break-words text-sm text-[#66736c]">{reservation.platform} · {reservation.notes || "Sin observaciones"}</p>
-                  {reservation.guestData ? (
+                  {reservation.guestData?.primary ? (
                     <p className="text-xs text-[#66736c]">
                       Titular: {reservation.guestData.primary.documentType.toUpperCase()} {reservation.guestData.primary.documentNumber}
-                      {" · "}Acompañantes: {reservation.guestData.occupants.length}
+                      {" · "}Acompañantes: {reservation.guestData.occupants?.length ?? 0}
                     </p>
                   ) : null}
                   {reservation.guestData?.legal ? (
@@ -4581,9 +4731,9 @@ function ReservationsPanel({
                     className="w-full"
                     onClick={() => {
                       setEditingReservationId(reservation.id);
-                      setPrimaryPhotoDataUrl(reservation.guestData?.primary.photoDataUrl ?? "");
-                      setPrimaryPhotoPath(reservation.guestData?.primary.photoPath ?? "");
-                      setPrimaryPhotoStatus(reservation.guestData?.primary.photoDataUrl ? "Foto cargada" : "Sin foto cargada");
+                      setPrimaryPhotoDataUrl(reservation.guestData?.primary?.photoDataUrl ?? "");
+                      setPrimaryPhotoPath(reservation.guestData?.primary?.photoPath ?? "");
+                      setPrimaryPhotoStatus(reservation.guestData?.primary?.photoDataUrl ? "Foto cargada" : "Sin foto cargada");
                       setReservationEditorOpen(true);
                     }}
                   >
@@ -4621,7 +4771,7 @@ function ReservationsPanel({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#d8ded6]">
-                  {reservations.map((reservation) => {
+                  {pagedReservations.map((reservation) => {
                     const unit = localUnits.find((currentUnit) => currentUnit.id === reservation.unitId);
                     return (
                       <tr key={reservation.id} className="hover:bg-[#f8faf7]">
@@ -4631,7 +4781,7 @@ function ReservationsPanel({
                         <td className="px-3 py-3">{formatShortDate(reservation.checkOut)}</td>
                         <td className="px-3 py-3">{formatShortDate(reservation.checkIn)}</td>
                         <td className="px-3 py-3">
-                          <Badge variant="outline">{reservation.guestData?.primary.documentNumber ? "Completo" : "Falta dato"}</Badge>
+                          <Badge variant="outline">{reservation.guestData?.primary?.documentNumber ? "Completo" : "Falta dato"}</Badge>
                         </td>
                         <td className="border-l border-[#e3e8e2] bg-white px-3 py-3">
                           <div className="grid w-[164px] grid-cols-2 gap-1.5">
@@ -4641,9 +4791,9 @@ function ReservationsPanel({
                               className="h-8 px-2 text-[11px]"
                               onClick={() => {
                                 setEditingReservationId(reservation.id);
-                                setPrimaryPhotoDataUrl(reservation.guestData?.primary.photoDataUrl ?? "");
-                                setPrimaryPhotoPath(reservation.guestData?.primary.photoPath ?? "");
-                                setPrimaryPhotoStatus(reservation.guestData?.primary.photoDataUrl ? "Foto cargada" : "Sin foto cargada");
+                                setPrimaryPhotoDataUrl(reservation.guestData?.primary?.photoDataUrl ?? "");
+                                setPrimaryPhotoPath(reservation.guestData?.primary?.photoPath ?? "");
+                                setPrimaryPhotoStatus(reservation.guestData?.primary?.photoDataUrl ? "Foto cargada" : "Sin foto cargada");
                                 setReservationEditorOpen(true);
                               }}
                             >
@@ -4672,6 +4822,18 @@ function ReservationsPanel({
               </table>
             </div>
           )}
+          <div className="flex items-center justify-between gap-2">
+            <Button variant="outline" size="sm" disabled={safeReservationPage <= 1} onClick={() => setReservationPage((current) => Math.max(1, current - 1))}>
+              Anterior
+            </Button>
+            <span className="text-xs text-[#66736c]">
+              Mostrando {pagedReservations.length === 0 ? 0 : (safeReservationPage - 1) * reservationPageSize + 1}-
+              {(safeReservationPage - 1) * reservationPageSize + pagedReservations.length} de {reservations.length}
+            </span>
+            <Button variant="outline" size="sm" disabled={safeReservationPage >= reservationTotalPages} onClick={() => setReservationPage((current) => Math.min(reservationTotalPages, current + 1))}>
+              Siguiente
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
@@ -4716,6 +4878,14 @@ function NotificationsPanel({
   markAllRead: () => void;
 }) {
   const unreadCount = notifications.filter((notification) => !notification.read).length;
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
+  const totalPages = Math.max(1, Math.ceil(notifications.length / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const pagedNotifications = useMemo(() => {
+    const start = (safePage - 1) * pageSize;
+    return notifications.slice(start, start + pageSize);
+  }, [notifications, safePage]);
 
   return (
     <Card className="rounded-lg border-[#d8ded6] shadow-none">
@@ -4737,7 +4907,7 @@ function NotificationsPanel({
         {notifications.length === 0 ? (
           <div className="rounded-lg border border-[#d8ded6] bg-white p-5 text-sm text-[#66736c]">Sin avisos por ahora.</div>
         ) : null}
-        {notifications.map((notification) => (
+        {pagedNotifications.map((notification) => (
           <button
             key={notification.id}
             onClick={() => markRead(notification.id)}
@@ -4755,6 +4925,17 @@ function NotificationsPanel({
             </p>
           </button>
         ))}
+        <div className="flex items-center justify-between gap-2">
+          <Button variant="outline" size="sm" disabled={safePage <= 1} onClick={() => setPage((current) => Math.max(1, current - 1))}>
+            Anterior
+          </Button>
+          <span className="text-xs text-[#66736c]">
+            Mostrando {pagedNotifications.length === 0 ? 0 : (safePage - 1) * pageSize + 1}-{(safePage - 1) * pageSize + pagedNotifications.length} de {notifications.length}
+          </span>
+          <Button variant="outline" size="sm" disabled={safePage >= totalPages} onClick={() => setPage((current) => Math.min(totalPages, current + 1))}>
+            Siguiente
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );
@@ -4769,6 +4950,15 @@ function UsersPanel({
   canManage: boolean;
   onUsersUpdated: (users: User[] | ((current: User[]) => User[])) => void;
 }) {
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
+  const totalPages = Math.max(1, Math.ceil(users.length / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const pagedUsers = useMemo(() => {
+    const start = (safePage - 1) * pageSize;
+    return users.slice(start, start + pageSize);
+  }, [users, safePage]);
+
   async function createUser(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!canManage) return;
@@ -4857,7 +5047,7 @@ function UsersPanel({
               </tr>
             </thead>
             <tbody className="divide-y divide-[#d8ded6]">
-              {users.map((user) => (
+              {pagedUsers.map((user) => (
                 <tr key={user.id}>
                   <td className="px-3 py-2 font-medium">{user.name}</td>
                   <td className="px-3 py-2">{user.email ?? "-"}</td>
@@ -4882,6 +5072,17 @@ function UsersPanel({
               ))}
             </tbody>
           </table>
+        </div>
+        <div className="flex items-center justify-between gap-2">
+          <Button variant="outline" size="sm" disabled={safePage <= 1} onClick={() => setPage((current) => Math.max(1, current - 1))}>
+            Anterior
+          </Button>
+          <span className="text-xs text-[#66736c]">
+            Mostrando {pagedUsers.length === 0 ? 0 : (safePage - 1) * pageSize + 1}-{(safePage - 1) * pageSize + pagedUsers.length} de {users.length}
+          </span>
+          <Button variant="outline" size="sm" disabled={safePage >= totalPages} onClick={() => setPage((current) => Math.min(totalPages, current + 1))}>
+            Siguiente
+          </Button>
         </div>
       </CardContent>
     </Card>

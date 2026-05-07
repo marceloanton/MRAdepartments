@@ -4,6 +4,10 @@ Operations platform for short-term rental apartment teams.
 
 Built for fast daily execution from mobile, notebook, and desktop, with a strong focus on operational control and traceability.
 
+## Live
+
+- Production: [https://mradep.vercel.app](https://mradep.vercel.app)
+
 ## What the software does
 
 - Unit operational states: cleaning, maintenance, inspection, ready, blocked.
@@ -16,23 +20,25 @@ Built for fast daily execution from mobile, notebook, and desktop, with a strong
 ## Product preview
 
 ### Desktop
-![Operations Dashboard](./public/screenshots/dashboard-operacion.png)
-![Check-in Risk](./public/screenshots/riesgo-checkin.png)
-![Reservations & Calendar](./public/screenshots/reservas-calendario.png)
-![SLA Board](./public/screenshots/sla-board.png)
-![Help Center](./public/screenshots/desktop-ayuda.png)
-![Departments](./public/screenshots/desktop-departamentos.png)
+<a href="./public/screenshots/dashboard-operacion.png"><img src="./public/screenshots/dashboard-operacion.png" alt="Operations Dashboard" width="360" /></a>
+<a href="./public/screenshots/riesgo-checkin.png"><img src="./public/screenshots/riesgo-checkin.png" alt="Check-in Risk" width="360" /></a>
+<a href="./public/screenshots/reservas-calendario.png"><img src="./public/screenshots/reservas-calendario.png" alt="Reservations & Calendar" width="360" /></a>
+<a href="./public/screenshots/sla-board.png"><img src="./public/screenshots/sla-board.png" alt="SLA Board" width="360" /></a>
+<a href="./public/screenshots/desktop-ayuda.png"><img src="./public/screenshots/desktop-ayuda.png" alt="Help Center" width="360" /></a>
+<a href="./public/screenshots/desktop-departamentos.png"><img src="./public/screenshots/desktop-departamentos.png" alt="Departments" width="360" /></a>
 
 ### Mobile
-![Mobile Operations](./public/screenshots/mobile-operacion.png)
-![Mobile Risk](./public/screenshots/mobile-riesgo.png)
-![Mobile Reservations](./public/screenshots/mobile-reservas.png)
-![Mobile Help](./public/screenshots/mobile-ayuda.png)
-![Mobile Kanban](./public/screenshots/kanban-mobile.png)
+<p align="center">
+  <a href="./public/screenshots/mobile-operacion.png"><img src="./public/screenshots/mobile-operacion.png" alt="Mobile Operations" height="420" /></a>
+  <a href="./public/screenshots/mobile-riesgo.png"><img src="./public/screenshots/mobile-riesgo.png" alt="Mobile Risk" height="420" /></a>
+  <a href="./public/screenshots/mobile-reservas.png"><img src="./public/screenshots/mobile-reservas.png" alt="Mobile Reservations" height="420" /></a>
+  <a href="./public/screenshots/mobile-ayuda.png"><img src="./public/screenshots/mobile-ayuda.png" alt="Mobile Help" height="420" /></a>
+  <a href="./public/screenshots/kanban-mobile.png"><img src="./public/screenshots/kanban-mobile.png" alt="Mobile Kanban" height="420" /></a>
+</p>
 
 ### Theme (Dark)
-![Operations Dashboard Dark](./public/screenshots/dashboard-operacion-dark.png)
-![Check-in Risk Dark](./public/screenshots/riesgo-checkin-dark.png)
+<a href="./public/screenshots/dashboard-operacion-dark.png"><img src="./public/screenshots/dashboard-operacion-dark.png" alt="Operations Dashboard Dark" width="360" /></a>
+<a href="./public/screenshots/riesgo-checkin-dark.png"><img src="./public/screenshots/riesgo-checkin-dark.png" alt="Check-in Risk Dark" width="360" /></a>
 
 ## Current status
 
